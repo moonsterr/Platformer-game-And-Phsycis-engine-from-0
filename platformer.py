@@ -1,32 +1,48 @@
 import tkinter as tk
 
-class Game:
+WIDTH = 800
+HEIGHT = 800
+class Game(object):
     def __init__(self):
-        self.root = tk.Tk()                # This OPENS the window
-        self.canvas = tk.Canvas(self.root, width=800, height=600, bg="black")
+        self.root = tk.Tk()
+        self.canvas = tk.Canvas(self.root,width=WIDTH, height=HEIGHT, bg="black")
         self.canvas.pack()
-
-        self.player = Player(self.canvas)
-        self.run()
-
-    def run(self):
-        self.player.update()
-        self.root.after(16, self.run)
-
-    def start(self):
         self.root.mainloop()
 
-class Entity:
+class Physics(object):
+    GRAVITY = 1
+    def __init__(self):
+        self.vx = 0
+        self.vy = 0
+    def apply_gravity(self):
+        self.vy += self.GRAVITY
+    def move(self, obj):
+        obj.x += self.vx
+        obj.y += self.vy
+    def check_collision(self, obj, platforms):
+        for plat in platforms:
+            if (obj.x + obj.width > plat.x and obj.x < plat.x + plat.width and
+                obj.y + obj.height > plat.y and obj.y < plat.y + plat.height):
+                obj.y = plat.y - obj.height
+                self.vy = 0
+
+class Person(Physics):
     def __init__(self, canvas):
         self.canvas = canvas
+        self.player_width = 50
+        self.player_height = 50
+        self.player_x = WIDTH//2
+        self.player_y = HEIGHT // 2
 
-class Player(Entity):
-    def __init__(self, canvas):
-        super().__init__(canvas)
-        self.sprite = canvas.create_rectangle(50, 50, 100, 100, fill="red")
-
-    def update(self):
-        self.canvas.move(self.sprite, 2, 0)   # simple movement, placeholder
-
+class Platform(Physics):
+    WIDTH = 125
+    HEIGHT = 60
+    def __init__(self, canvas, x, y,width,height):
+        self.canvas = canvas
+        self.x = x
+        self.y = y
+        self.width = self.WIDTH
+        self.height = self.HEIGHT
+        self.rect = canvas.create_rectangle(self.x,self.y, self.x + self.width, self.y + self.height ,fill = 'green')
+        
 game = Game()
-game.start()

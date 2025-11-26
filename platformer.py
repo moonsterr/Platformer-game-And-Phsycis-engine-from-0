@@ -1,27 +1,61 @@
 import tkinter as tk
+import random
 
 WIDTH = 1200
 HEIGHT = 1200
-STEP = 1 
+STEP = 1
+PLATFORM_COUNT = 10
+PLATFORM_MIN_WIDTH = 100
+PLATFORM_MAX_WIDTH = 400
+PLATFORM_MIN_HEIGHT = 20
+PLATFORM_MAX_HEIGHT = 60
+PLATFORM_VERTICAL_GAP = 100
+
 class Game:
     def __init__(self):
         self.root = tk.Tk()
         self.canvas = tk.Canvas(self.root, width=WIDTH, height=HEIGHT, bg="black")
         self.canvas.pack()
-
-        self.person = Person(self.canvas)
-        self.person.create_person()
-
         self.platforms = [
-            Platform(self.canvas, 0, 1000 - 60, 1200, 60),
-            Platform(self.canvas, 100, 700, 500, 50)
+            Platform(self.canvas, 0, HEIGHT - 300, WIDTH, 120)
         ]
+        self.generate_platforms(PLATFORM_COUNT)
+
+        ground = self.platforms[0]
+        start_x = ground.x + ground.width // 2 - 25
+        start_y = ground.y - 50
+        self.person = Person(self.canvas, start_x, start_y)
+        self.person.create_person()
 
         self.root.bind("<KeyPress>", self.on_key_press)
         self.root.bind("<KeyRelease>", self.on_key_release)
 
         self.update_game()
         self.root.mainloop()
+
+    def generate_platforms(self, count):
+        attempts = 0
+        while count > 0 and attempts < 500:
+            width = random.randint(PLATFORM_MIN_WIDTH, PLATFORM_MAX_WIDTH)
+            height = random.randint(PLATFORM_MIN_HEIGHT, PLATFORM_MAX_HEIGHT)
+            x = random.randint(0, WIDTH - width)
+            y = random.randint(100, HEIGHT - 200) 
+
+            new_plat = Platform(self.canvas, x, y, width, height)
+
+          
+            if not any(self.check_overlap(new_plat, plat) for plat in self.platforms):
+                self.platforms.append(new_plat)
+                count -= 1
+            else:
+                self.canvas.delete(new_plat.rect)  
+
+            attempts += 1
+
+    @staticmethod
+    def check_overlap(p1, p2):
+        return (p1.x + p1.width > p2.x - 50 and p1.x < p2.x + p2.width + 50 and
+                p1.y + p1.height > p2.y - PLATFORM_VERTICAL_GAP and p1.y < p2.y + p2.height + PLATFORM_VERTICAL_GAP)
 
     def on_key_press(self, event):
         if event.keysym == "Left":
@@ -62,14 +96,13 @@ class Physics:
                 if self.check_overlap(obj, plat):
                     if step > 0:
                         obj.x = plat.x - obj.width
-                    else:  
+                    else:
                         obj.x = plat.x + plat.width
                     self.vx = 0
             dx -= step
 
-
         dy = self.vy
-        obj.can_jump = False  
+        obj.can_jump = False
         while dy != 0:
             step = STEP if dy > 0 else -STEP
             if abs(dy) < STEP:
@@ -77,12 +110,11 @@ class Physics:
             obj.y += step
             for plat in platforms:
                 if self.check_overlap(obj, plat):
-
-                    if step > 0:  
+                    if step > 0:
                         obj.y = plat.y - obj.height
                         obj.vy = 0
                         obj.can_jump = True
-                    else: 
+                    else:
                         obj.y = plat.y + plat.height
                         obj.vy = 0
             dy -= step
@@ -94,13 +126,13 @@ class Physics:
 
 
 class Person(Physics):
-    def __init__(self, canvas):
+    def __init__(self, canvas, x, y):
         super().__init__()
         self.canvas = canvas
         self.width = 50
         self.height = 50
-        self.x = WIDTH // 2
-        self.y = HEIGHT // 2
+        self.x = x
+        self.y = y
         self.can_jump = False
 
     def create_person(self):
